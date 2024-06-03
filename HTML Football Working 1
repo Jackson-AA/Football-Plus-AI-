@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Football Play Visualization</title>
+  <style>
+    /* CSS styles for the canvas */
+    canvas {
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+  <!-- Canvas element where the play visualization will be rendered -->
+  <canvas id="playCanvas" width="600" height="400"></canvas>
+
+  <!-- Buttons for user interaction -->
+  <div>
+    <button id="playButton">Play</button>
+    <button id="pauseButton">Pause</button>
+    <button id="resetButton">Reset</button>
+  </div>
+
+  <script>
+    // Play data object containing offensive and defensive player positions and paths
+    const playData = {
+      offensePositions: {
+        QB: [300, 330],
+        HB: [270, 330],
+        LT: [180, 300],
+        LG: [210, 300],
+        C: [240, 300],
+        RG: [270, 300],
+        RT: [300, 300],
+        TE: [330, 300],
+        WR1: [120, 300],
+        WR2: [240, 220],
+        WR3: [390, 300],
+      },
+      offensePaths: {
+        QB: [[0, -50], [20, -70], [40, -90]],
+        HB: [[0, -30], [30, -60], [60, -90]],
+        LT: [[0, -20], [20, -40], [40, -60]],
+        LG: [[0, -20], [20, -40], [40, -60]],
+        C: [[0, -20], [20, -40], [40, -60]],
+        RG: [[0, -20], [20, -40], [40, -60]],
+        RT: [[0, -20], [20, -40], [40, -60]],
+        TE: [[0, -10], [10, -20], [20, -30]],
+        WR1: [[0, -10], [10, -20], [20, -30]],
+        WR2: [[0, -10], [10, -20], [20, -30]],
+        WR3: [[0, -10], [10, -20], [20, -30]],
+      },
+      defensePositions: {
+        DE1: [210, 240],
+        DT1: [240, 240],
+        DT2: [270, 240],
+        DE2: [300, 240],
+        LB1: [210, 200],
+        LB2: [270, 200],
+        LB3: [330, 200],
+        CB1: [150, 240],
+        CB2: [390, 240],
+        S1: [240, 160],
+        S2: [300, 160],
+      },
+    };
+
+    // Object containing paths to player sprites (not used in this example)
+    const playerSprites = {
+      QB: 'path/to/qb-sprite.png',
+      HB: 'path/to/hb-sprite.png',
+      // ... add paths for other player sprites
+    };
+
+    // Function to draw the football field
+    function drawField(ctx) {
+      ctx.fillStyle = 'green'; // Set the fill color to green
+      ctx.fillRect(0, 0, 600, 400); // Draw a green rectangle representing the field
+      // Add yard lines, hash marks, etc.
+    }
+
+    // Function to draw a player on the field
+    function drawPlayer(ctx, x, y, label, isOffense, sprite) {
+      if (sprite) {
+        // If a sprite is provided, draw the sprite image
+        const img = new Image();
+        img.src = sprite;
+        ctx.drawImage(img, x - img.width / 2, y - img.height / 2);
+      } else {
+        // If no sprite is provided, draw a circle representing the player
+        ctx.beginPath();
+        ctx.arc(x, y, 15, 0, Math.PI * 2); // Draw a circle with a radius of 15 pixels
+        ctx.fillStyle = isOffense ? 'blue' : 'red'; // Set the fill color based on offense/defense
+        ctx.fill(); // Fill the circle
+        ctx.strokeStyle = 'white'; // Set the stroke color to white
+        ctx.lineWidth = 2; // Set the line width to 2 pixels
+        ctx.stroke(); // Draw the stroke around the circle
+      }
+
+      // Draw the player label (e.g., QB, HB, LT, etc.)
+      ctx.fillStyle = 'white'; // Set the fill color to white
+      ctx.font = '12px Arial'; // Set the font style and size
+      ctx.fillText(label, x - 5, y + 4); // Draw the label text
+    }
+
+    // Function to draw a player's path
+    function drawPlayerPath(ctx, x, y, path, color) {
+      ctx.strokeStyle = color; // Set the stroke color
+      ctx.lineWidth = 2; // Set the line width to 2 pixels
+      ctx.beginPath(); // Begin a new path
+      ctx.moveTo(x, y); // Move the drawing cursor to the player's position
+      for (const [dx, dy] of path) {
+        ctx.lineTo(x + dx, y + dy); // Draw a line segment for each point in the path
+      }
+      ctx.stroke(); // Draw the path
+    }
+
+    // Get the canvas element and its 2D rendering context
+    const canvas = document.getElementById('playCanvas');
+    const ctx = canvas.getContext('2d');
+    let isPlaying = false; // Flag to track if the play is playing or not
+    let animationFrame; // Variable to store the animation frame request ID
+
+    // Event listeners for buttons
+    document.getElementById('playButton').addEventListener('click', startPlay);
+    document.getElementById('pauseButton').addEventListener('click', pausePlay);
+    document.getElementById('resetButton').addEventListener('click', resetPlay);
+
+    // Function to start the play
+    function startPlay() {
+      if (!isPlaying) {
+        isPlaying = true;
+        animatePlay(); // Start the animation loop
+      }
+    }
+
+    // Function to pause the play
+    function pausePlay() {
+      isPlaying = false;
+      cancelAnimationFrame(animationFrame); // Cancel the animation frame request
+    }
+
+    // Function to reset the play
+    function resetPlay() {
+      isPlaying = false;
+      cancelAnimationFrame(animationFrame); // Cancel the animation frame request
+      renderPlay(); // Render the initial play state
+    }
+
+    // Animation loop function
+    function animatePlay() {
+      // Implement animation logic here
+      renderPlay(); // Render the current frame
+      animationFrame = requestAnimationFrame(animatePlay); // Request the next animation frame
+    }
+
+    // Function to render the play
+    function renderPlay() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+
+      drawField(ctx); // Draw the football field
+
+      // Draw offensive players and paths
+      for (const [player, path] of Object.entries(playData.offensePaths)) {
+        const [x, y] = playData.offensePositions[player]; // Get the player's position
+        const sprite = playerSprites[player]; // Get the player's sprite (if available)
+        drawPlayer(ctx, x, y, player, true, sprite); // Draw the offensive player
+        drawPlayerPath(ctx, x, y, path, 'yellow'); // Draw the player's path
+      }
+
+      // Draw defensive players (no paths)
+      for (const [player, [x, y]] of Object.entries(playData.defensePositions)) {
+        drawPlayer(ctx, x, y, player, false); // Draw the defensive player
+      }
+    }
+
+    renderPlay(); // Render the initial play state
+  </script>
+</body>
+</html>
